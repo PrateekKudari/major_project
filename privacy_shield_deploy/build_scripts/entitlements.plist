@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  entitlements.plist — macOS code-signing entitlements
+  ──────────────────────────────────────────────────────
+  Required for the app to access the camera on macOS 10.14+.
+  Used during code-signing:
+
+      codesign -force -deep -sign "Developer ID Application: YOUR NAME (TEAMID)" \
+               -entitlements build_scripts/entitlements.plist \
+               dist/PrivacyShield.app
+
+  For local (unsigned) distribution, the Info.plist NSCameraUsageDescription
+  key set in privacy_shield.spec is sufficient for Gatekeeper to show the
+  system camera-permission dialog.
+-->
+<plist version="1.0">
+<dict>
+    <!-- ── Camera access (triggers "Allow PrivacyShield to access your camera?" dialog) ── -->
+    <key>com.apple.security.device.camera</key>
+    <true/>
+
+    <!-- ── Microphone (optional, for future audio features) ── -->
+    <key>com.apple.security.device.microphone</key>
+    <true/>
+
+    <!-- ── Hardened runtime (required for notarisation) ── -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+
+    <!-- ── Network client (Flask local server) ── -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <key>com.apple.security.network.server</key>
+    <true/>
+</dict>
+</plist>

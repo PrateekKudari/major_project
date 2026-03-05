@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>🛡️ Privacy Shield</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080B14;--bg2:#0D1120;--card:#111826;--border:#1C2538;
+  --accent:#00E5FF;--accent2:#7B5EFF;--green:#00D47E;
+  --danger:#FF4564;--orange:#FF9B20;--text:#D8E2F0;--dim:#4E5E78;
+}
+html{height:100%}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;display:grid;grid-template-columns:1fr 340px;grid-template-rows:56px 1fr;gap:0}
+
+/* ── Top bar ── */
+header{
+  grid-column:1/-1;background:rgba(8,11,20,.9);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;
+  padding:0 24px;gap:16px;position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700}
+.logo span{font-size:22px}
+.badge{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;padding:3px 10px;border-radius:20px;
+  background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.25);color:var(--accent);
+}
+.spacer{flex:1}
+#fps-badge{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── Video pane ── */
+.video-pane{
+  position:relative;background:#000;display:flex;align-items:center;
+  justify-content:center;overflow:hidden;
+}
+#video-feed{width:100%;height:100%;object-fit:contain;display:block}
+#permission-overlay{
+  position:absolute;inset:0;background:rgba(8,11,20,.96);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;z-index:10;transition:opacity .4s;
+}
+#permission-overlay.hidden{opacity:0;pointer-events:none}
+.perm-icon{font-size:64px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.perm-title{font-size:26px;font-weight:700}
+.perm-sub{color:var(--dim);font-size:14px;max-width:340px;text-align:center;line-height:1.6}
+.perm-steps{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:16px 24px;display:flex;flex-direction:column;gap:10px;
+  font-size:13px;max-width:340px;
+}
+.perm-step{display:flex;align-items:center;gap:12px;color:var(--text)}
+.step-num{
+  width:24px;height:24px;border-radius:50%;background:var(--accent2);
+  display:flex;align-items:center;justify-content:center;font-size:11px;
+  font-weight:700;flex-shrink:0;color:#fff;font-family:'IBM Plex Mono',monospace;
+}
+#grant-btn{
+  background:var(--accent);color:#050810;border:none;border-radius:8px;
+  padding:14px 32px;font-size:14px;font-weight:700;font-family:'Outfit',sans-serif;
+  cursor:pointer;letter-spacing:.04em;transition:all .2s;
+}
+#grant-btn:hover{filter:brightness(1.15);transform:translateY(-2px)}
+.perm-note{font-size:11px;color:var(--dim);font-family:'IBM Plex Mono',monospace}
+
+/* ── Scan lines on video ── */
+.video-pane::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);
+  pointer-events:none;
+}
+
+/* ── Control panel ── */
+.panel{
+  border-left:1px solid var(--border);background:var(--bg2);
+  overflow-y:auto;padding:0 0 24px;
+}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-track{background:transparent}
+.panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.panel-section{padding:20px 20px 0}
+.panel-label{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:12px;
+}
+
+/* Stats row */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:12px;text-align:center;
+}
+.stat-val{font-size:20px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--accent)}
+.stat-name{font-size:10px;color:var(--dim);margin-top:2px;letter-spacing:.06em;text-transform:uppercase}
+
+/* Master toggle */
+.shield-toggle{
+  width:100%;background:var(--danger);color:#fff;border:none;
+  border-radius:10px;padding:14px;font-size:14px;font-weight:700;
+  font-family:'Outfit',sans-serif;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.shield-toggle.active{background:linear-gradient(135deg,#0D5C34,var(--green))}
+.shield-toggle:hover{filter:brightness(1.1)}
+
+/* Sliders */
+.slider-row{margin-bottom:16px}
+.slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.slider-name{font-size:13px;font-weight:600}
+.slider-val{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)}
+input[type=range]{
+  width:100%;-webkit-appearance:none;height:4px;
+  border-radius:2px;background:var(--border);outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--accent);cursor:pointer;box-shadow:0 0 8px rgba(0,229,255,.4);
+}
+
+/* Divider */
+hr{border:none;border-top:1px solid var(--border);margin:20px 0}
+
+/* Category toggles */
+.cat-item{
+  display:flex;align-items:center;gap:10px;padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;
+}
+.cat-item:last-child{border-bottom:none}
+.cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.cat-name-txt{flex:1;font-size:13px}
+.cat-count{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  background:var(--border);padding:2px 7px;border-radius:10px;color:var(--dim);
+}
+/* iOS-style toggle */
+.ios-toggle{position:relative;width:36px;height:20px;flex-shrink:0}
+.ios-toggle input{opacity:0;width:0;height:0}
+.ios-slider{
+  position:absolute;inset:0;background:#2A3550;border-radius:20px;
+  cursor:pointer;transition:.25s;
+}
+.ios-slider::before{
+  content:'';position:absolute;height:14px;width:14px;left:3px;bottom:3px;
+  background:#fff;border-radius:50%;transition:.25s;
+}
+.ios-toggle input:checked + .ios-slider{background:var(--green)}
+.ios-toggle input:checked + .ios-slider::before{transform:translateX(16px)}
+
+/* Checkbox row */
+.check-row{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;cursor:pointer}
+.check-row input{accent-color:var(--accent);width:15px;height:15px}
+
+/* Detection log */
+.det-log{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:12px;max-height:120px;overflow-y:auto;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.8;
+}
+.det-log::-webkit-scrollbar{width:3px}
+.det-log::-webkit-scrollbar-thumb{background:var(--border)}
+.log-entry{animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.log-none{color:var(--dim)}
+
+/* How to use section */
+.how-card{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:14px;font-size:12px;line-height:1.7;color:var(--dim);
+}
+.how-card strong{color:var(--text)}
+.how-card a{color:var(--accent);text-decoration:none}
+
+/* Responsive */
+@media(max-width:860px){
+  body{grid-template-columns:1fr;grid-template-rows:56px 50vw 1fr}
+  .video-pane{min-height:50vw}
+  .panel{border-left:none;border-top:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ TOP BAR ══ -->
+<header>
+  <div class="logo"><span>🛡️</span> Privacy Shield</div>
+  <div class="badge">Real-Time CV</div>
+  <div class="spacer"></div>
+  <span id="fps-badge">— fps</span>
+  <div class="status-dot" id="status-dot" style="background:var(--dim);box-shadow:none"></div>
+</header>
+
+<!-- ══ VIDEO PANE ══ -->
+<div class="video-pane">
+  <!-- Camera permission overlay (shown before stream starts) -->
+  <div id="permission-overlay">
+    <div class="perm-icon">📷</div>
+    <div class="perm-title">Camera Access Required</div>
+    <div class="perm-sub">Privacy Shield needs your camera to detect and blur sensitive items in real time. All processing stays on your machine — nothing is uploaded.</div>
+    <div class="perm-steps">
+      <div class="perm-step"><div class="step-num">1</div>Click <strong>"Allow"</strong> in the browser permission bar</div>
+      <div class="perm-step"><div class="step-num">2</div>Your live feed appears with shield active</div>
+      <div class="perm-step"><div class="step-num">3</div>Use as virtual camera source in OBS</div>
+    </div>
+    <button id="grant-btn" onclick="startFeed()">🎥 Enable Camera & Start Shield</button>
+    <div class="perm-note">🔒 100% local processing — no cloud, no uploads</div>
+  </div>
+
+  <img id="video-feed" src="" alt="Video feed" style="display:none"/>
+</div>
+
+<!-- ══ CONTROL PANEL ══ -->
+<div class="panel">
+
+  <!-- Stats -->
+  <div class="panel-section">
+    <div style="height:16px"></div>
+    <div class="panel-label">Live Stats</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-val" id="stat-fps">—</div>
+        <div class="stat-name">FPS</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-det" style="color:var(--danger)">—</div>
+        <div class="stat-name">Detections</div>
+      </div>
+    </div>
+
+    <!-- Shield master toggle -->
+    <button class="shield-toggle active" id="shield-btn" onclick="toggleShield()">
+      <span id="shield-icon">🛡️</span>
+      <span id="shield-txt">SHIELD ACTIVE</span>
+    </button>
+  </div>
+
+  <hr/>
+
+  <!-- Blur + Confidence sliders -->
+  <div class="panel-section">
+    <div class="panel-label">Settings</div>
+
+    <div class="slider-row">
+      <div class="slider-header">
+        <div class="slider-name">Blur Intensity</div>
+        <div class="slider-val" id="blur-val">Medium</div>
+      </div>
+      <input type="range" id="blur-slider" min="5" max="101" step="2" value="51"
+             oninput="updateBlur(this.value)"/>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-header">
+        <div class="slider-name">Confidence Threshold</div>
+        <div class="slider-val" id="conf-val">40%</div>
+      </div>
+      <input type="range" id="conf-slider" min="10" max="90" step="5" value="40"
+             oninput="updateConf(this.value)"/>
+    </div>
+
+    <label class="check-row">
+      <input type="checkbox" id="boxes-cb" checked onchange="updateBoxes(this.checked)"/>
+      Show detection boxes
+    </label>
+    <label class="check-row">
+      <input type="checkbox" id="protect-cb" checked onchange="updateProtect(this.checked)"/>
+      Protect main person (keep you unblurred)
+    </label>
+  </div>
+
+  <hr/>
+
+  <!-- Category toggles -->
+  <div class="panel-section">
+    <div class="panel-label">Privacy Categories</div>
+    <div id="cat-list"></div>
+  </div>
+
+  <hr/>
+
+  <!-- Detection log -->
+  <div class="panel-section">
+    <div class="panel-label">Detection Log</div>
+    <div class="det-log" id="det-log">
+      <span class="log-none">Waiting for feed…</span>
+    </div>
+  </div>
+
+  <hr/>
+
+  <!-- How to use as virtual camera -->
+  <div class="panel-section">
+    <div class="panel-label">Use in Video Calls</div>
+    <div class="how-card">
+      <strong>Route through OBS Virtual Camera:</strong><br>
+      1. Install <a href="https://obsproject.com" target="_blank">OBS Studio</a><br>
+      2. Add Browser Source → <code>http://localhost:5000</code><br>
+      3. Click <strong>Start Virtual Camera</strong> in OBS<br>
+      4. In Zoom/Teams/Meet → select <strong>OBS Virtual Camera</strong><br><br>
+      <strong>Or share the browser tab directly</strong> in Google Meet's "Share a Tab" option.
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Category config ─────────────────────────────────────────────────────────
+const CATEGORIES = [
+  { name:"Background People",  color:"#FF4F4F", icon:"👥" },
+  { name:"Phones & Screens",   color:"#FF9F1C", icon:"📱" },
+  { name:"Documents & Books",  color:"#2ECC71", icon:"📄" },
+  { name:"Keyboards & Mice",   color:"#3498DB", icon:"⌨️" },
+  { name:"Background Objects", color:"#9B59B6", icon:"🧸" },
+];
+
+let shieldActive = true;
+let feedStarted  = false;
+
+// ── Build category list ──────────────────────────────────────────────────────
+const catList = document.getElementById("cat-list");
+CATEGORIES.forEach(cat => {
+  const row = document.createElement("div");
+  row.className = "cat-item";
+  row.innerHTML = `
+    <span style="font-size:16px">${cat.icon}</span>
+    <div class="cat-dot" style="background:${cat.color}"></div>
+    <div class="cat-name-txt">${cat.name}</div>
+    <span class="cat-count" id="cnt-${cat.name.replace(/ /g,'_')}">0</span>
+    <label class="ios-toggle">
+      <input type="checkbox" checked onchange="toggleCat('${cat.name}', this.checked)"/>
+      <span class="ios-slider"></span>
+    </label>`;
+  catList.appendChild(row);
+});
+
+// ── Start feed ───────────────────────────────────────────────────────────────
+function startFeed() {
+  const overlay = document.getElementById("permission-overlay");
+  const feed    = document.getElementById("video-feed");
+  const btn     = document.getElementById("grant-btn");
+
+  btn.textContent = "⏳ Starting camera…";
+  btn.disabled    = true;
+
+  // The browser may show a permission dialog here if not yet granted
+  // (getUserMedia is used to trigger the OS/browser permission prompt)
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      // Stop the test stream — actual capture happens server-side via OpenCV
+      stream.getTracks().forEach(t => t.stop());
+
+      // Show the MJPEG feed from Flask
+      feed.src = "/video_feed";
+      feed.style.display = "block";
+      feed.onload = () => {
+        overlay.classList.add("hidden");
+        feedStarted = true;
+        document.getElementById("status-dot").style.cssText =
+          "background:var(--green);box-shadow:0 0 6px var(--green)";
+        startPolling();
+      };
+    })
+    .catch(err => {
+      btn.textContent = "⚠️ Permission denied — see console";
+      btn.disabled    = false;
+      console.error("Camera permission error:", err);
+      // Still try to start (server-side camera may work)
+      feed.src = "/video_feed";
+      feed.style.display = "block";
+      overlay.classList.add("hidden");
+      feedStarted = true;
+      startPolling();
+    });
+}
+
+// ── Poll /stats every 600 ms ─────────────────────────────────────────────────
+let logHistory = [];
+
+function startPolling() {
+  setInterval(async () => {
+    try {
+      const r    = await fetch("/stats");
+      const data = await r.json();
+      document.getElementById("stat-fps").textContent = data.fps + " fps";
+      document.getElementById("stat-det").textContent = data.total;
+      document.getElementById("fps-badge").textContent = data.fps + " fps";
+
+      // Per-category counts
+      for (const [cat, cnt] of Object.entries(data.detections)) {
+        const el = document.getElementById("cnt-" + cat.replace(/ /g,"_"));
+        if (el) el.textContent = cnt;
+      }
+
+      // Detection log
+      if (data.total > 0) {
+        const cats = Object.entries(data.detections)
+          .filter(([,v]) => v > 0)
+          .map(([k,v]) => `${k} ×${v}`)
+          .join(" · ");
+        const ts = new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+        logHistory.unshift(`<div class="log-entry"><span style="color:var(--dim)">${ts}</span>  ${cats}</div>`);
+        if (logHistory.length > 20) logHistory.pop();
+        document.getElementById("det-log").innerHTML = logHistory.join("");
+      }
+    } catch(_) {}
+  }, 600);
+}
+
+// ── Controls ─────────────────────────────────────────────────────────────────
+async function post(data) {
+  await fetch("/config", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(data)
+  });
+}
+
+function toggleShield() {
+  shieldActive = !shieldActive;
+  post({ shield: shieldActive });
+  const btn = document.getElementById("shield-btn");
+  const ico = document.getElementById("shield-icon");
+  const txt = document.getElementById("shield-txt");
+  if (shieldActive) {
+    btn.className = "shield-toggle active";
+    ico.textContent = "🛡️"; txt.textContent = "SHIELD ACTIVE";
+  } else {
+    btn.className = "shield-toggle";
+    ico.textContent = "⏸"; txt.textContent = "SHIELD PAUSED";
+  }
+}
+
+function updateBlur(v) {
+  const level = v < 25 ? "Low" : v < 65 ? "Medium" : "High";
+  document.getElementById("blur-val").textContent = `${level} (${v})`;
+  post({ blur: parseInt(v) });
+}
+
+function updateConf(v) {
+  document.getElementById("conf-val").textContent = v + "%";
+  post({ confidence: v / 100 });
+}
+
+function updateBoxes(v)   { post({ show_boxes: v }); }
+function updateProtect(v) { post({ protect_main: v }); }
+function toggleCat(name, v) { post({ category: { name, enabled: v } }); }
+</script>
+</body>
+</html>
